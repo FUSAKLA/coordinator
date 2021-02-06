@@ -2,6 +2,11 @@
 
 Tool to coordinate maintenance and incidents
 
+> # :construction:  Currently under a heavy construction
+
+## Screenshot
+![image](https://user-images.githubusercontent.com/6112562/107105179-407dd880-6825-11eb-820e-80bcf57b24ea.png)
+
 ## TODO
 
 - add pages to show teams and their on-calls
