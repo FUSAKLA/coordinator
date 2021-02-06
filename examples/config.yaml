@@ -1,0 +1,15 @@
+storage:
+  storage_to_use: gitlab
+  oauth_callback_base_url: http://localhost:8080
+  gitlab:
+    enabled: true
+    project: fusakla/coordinator-demo
+
+catalogue:
+  enabled: true
+  file: examples/catalogue.yaml
+
+on-call-providers:
+  opsgenie:
+    enabled: true
+    api-url: api.eu.opsgenie.com    # api.opsgenie.com | api.eu.opsgenie.com | api.sandbox.opsgenie.com
