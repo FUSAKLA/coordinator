@@ -3,7 +3,6 @@ import React, {useState} from "react";
 import {blue, cyan, lightGreen, red, teal} from "@material-ui/core/colors";
 import {createMuiTheme, CssBaseline, IconButton} from "@material-ui/core";
 import {Brightness4, Brightness7} from "@material-ui/icons";
-import "./Light.css"
 
 declare module "@material-ui/core/styles/createPalette" {
     // eslint-disable-next-line
