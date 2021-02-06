@@ -1,8 +1,13 @@
 package v1
 
 import (
-	"github.com/fusakla/coordinator/pkg/eventstore"
-	"github.com/gin-gonic/gin"
+	"encoding/json"
+	"fmt"
+	"github.com/fusakla/coordinator/api"
+	"github.com/fusakla/coordinator/pkg/storage"
+	"github.com/go-playground/form/v4"
+	"github.com/go-playground/validator/v10"
+	"github.com/gorilla/mux"
 	"net/http"
 	"time"
 )
@@ -14,28 +19,32 @@ type User struct {
 }
 
 type EventComment struct {
-	Author User   `json:"author"`
-	Text   string `json:"text"`
+	Author User   `json:"author" validate:"-"`
+	Text   string `json:"text" validate:"required"`
 }
 
 type Event struct {
-	Id                string    `json:"id"`
-	Type              string    `json:"type"`
-	Title             string    `json:"title"`
+	Id                string    `json:"id" validate:"isdefault"`
+	State             string    `json:"state" validate:"isdefault"`
+	Type              string    `json:"type"  validate:"required"`
+	Title             string    `json:"title" validate:"required"`
 	Start             time.Time `json:"start"`
 	End               time.Time `json:"end"`
 	Description       string    `json:"description"`
-	ResponsiblePerson User      `json:"responsible_person"`
-	NumberOfComments  int       `json:"number_of_comments"`
+	Labels            []string  `json:"labels"`
+	ResponsiblePerson User      `json:"responsible_person" validate:"-"`
+	NumberOfComments  int       `json:"number_of_comments" validate:"isdefault"`
 }
 
-func (a *Api) registerEventApi(router *gin.RouterGroup) {
-	router.GET("", a.GetEvents)
-	router.GET("/:id", a.GetEvent)
-	router.GET("/:id/comments", a.GetEventComments)
+func (a *Api) registerEventApi(router *mux.Router) {
+	router.Methods("GET").Path("").HandlerFunc(a.GetEvents)
+	router.Methods("POST").Path("").HandlerFunc(a.PostEvent)
+	router.Methods("GET").Path("/{id}").HandlerFunc(a.GetEvent)
+	router.Methods("GET").Path("/{id}/comments").HandlerFunc(a.GetEventComments)
+	router.Methods("POST").Path("/{id}/comments").HandlerFunc(a.PostEventComment)
 }
 
-func apiUser(storeUser eventstore.User) User {
+func apiUser(storeUser storage.User) User {
 	return User{
 		Name:      storeUser.Name(),
 		Email:     storeUser.Email(),
@@ -43,56 +52,134 @@ func apiUser(storeUser eventstore.User) User {
 	}
 }
 
-func apiEvent(storeEvent eventstore.Event) Event {
+func apiEvent(storeEvent storage.Event) Event {
 	return Event{
 		Id:                storeEvent.Id(),
-		Type:              storeEvent.Type(),
-		Title:             storeEvent.Name(),
+		State:             string(storeEvent.State()),
+		Type:              string(storeEvent.Type()),
+		Title:             storeEvent.Title(),
 		Start:             storeEvent.Start(),
 		End:               storeEvent.End(),
-		Description:       storeEvent.Text(),
+		Description:       storeEvent.Description(),
+		Labels:            storeEvent.Labels(),
 		ResponsiblePerson: apiUser(storeEvent.ResponsiblePerson()),
 		NumberOfComments:  storeEvent.NumberOfComments(),
 	}
 }
 
-func (a *Api) GetEvents(c *gin.Context) {
-	storeEvents, err := a.store.Events(eventstore.EventFilter{Limit: 10})
+func stringsToEventTypes(strings []string) ([]storage.EventType, error) {
+	t := make([]storage.EventType, len(strings))
+	for i, s := range strings {
+		if err := api.ValidateEventType(s); err != nil {
+			return nil, err
+		}
+		t[i] = storage.EventType(s)
+	}
+	return t, nil
+}
+
+func (a *Api) GetEvents(w http.ResponseWriter, r *http.Request) {
+	var f struct {
+		Limit     int       `form:"limit,omitempty"`
+		Since     time.Time `form:"since,omitempty"`
+		Until     time.Time `form:"until,omitempty"`
+		EventType []string  `form:"event_type,omitempty"`
+	}
+	if err := form.NewDecoder().Decode(&f, r.URL.Query()); err != nil {
+		api.JSONErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("Invalid query: %v", err))
+		return
+	}
+	filter := storage.EventFilter{
+		Limit:      30,
+		Since:      time.Now().Add(-time.Hour * 24 * 7),
+		Until:      time.Now(),
+		EventTypes: nil,
+	}
+	typesFilter, err := stringsToEventTypes(f.EventType)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err})
+		api.JSONErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("invalid event types: %v", err))
+		return
+	}
+	if len(typesFilter) > 0 {
+		filter.EventTypes = typesFilter
+	}
+	if f.Limit > 0 {
+		filter.Limit = f.Limit
+	}
+	if f.Since.Nanosecond() > 0 {
+		filter.Since = f.Since
+	}
+	if f.Until.Nanosecond() > 0 {
+		filter.Until = f.Until
+	}
+	storeEvents, err := a.storage.Events(r.Context(), filter)
+	if err != nil {
+		api.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("error reading events from storage: %v", err))
 		return
 	}
 	apiEvents := make([]Event, len(storeEvents))
 	for i, e := range storeEvents {
 		apiEvents[i] = apiEvent(e)
 	}
-	c.JSON(http.StatusOK, gin.H{"storeEvents": apiEvents})
+	api.JSONResponse(w, http.StatusOK, struct {
+		Events []Event `json:"events"`
+	}{Events: apiEvents})
 }
 
-func (a *Api) GetEvent(c *gin.Context) {
-	event, err := a.store.Event(c.Param("id"))
+func (a *Api) GetEvent(w http.ResponseWriter, r *http.Request) {
+	event, err := a.storage.Event(r.Context(), mux.Vars(r)["id"])
 	if err != nil {
-		a.log.Error(err)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": err,
-		})
+		api.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to get event from storage: %v", err))
 		return
 	}
 	if event == nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": "event not found"})
+		api.JSONErrorResponse(w, http.StatusNotFound, "event not found")
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"event": apiEvent(event)})
+	api.JSONResponse(w, http.StatusOK, struct {
+		Event Event `json:"event"`
+	}{Event: apiEvent(event)})
 }
 
-func (a *Api) GetEventComments(c *gin.Context) {
-	eventId := c.Param("id")
-	notes, err := a.store.EventComments(eventId)
+func (a *Api) PostEvent(w http.ResponseWriter, r *http.Request) {
+	e := Event{}
+	if err := json.NewDecoder(r.Body).Decode(&e); err != nil {
+		api.JSONErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("invalid event: %v", err))
+		return
+	}
+	a.log.Info(e)
+	if err := validator.New().Struct(e); err != nil {
+		api.JSONErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("invalid event: %v", err))
+		return
+	}
+	t, err := a.sessionStore.GetStorageToken(r)
 	if err != nil {
-		a.log.Error(err)
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": err,
-		})
+		http.Redirect(w, r, "/auth/login", http.StatusTemporaryRedirect)
+		return
+	}
+	if err := a.storage.NewEvent(
+		r.Context(),
+		t,
+		storage.NewEventOpts{
+			Type:        storage.EventType(e.Type),
+			Title:       e.Title,
+			Description: e.Description,
+			Labels:      e.Labels,
+			Start:       e.Start,
+			End:         e.End,
+		}); err != nil {
+		api.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to create new event: %v", err))
+		return
+	}
+	api.JSONResponse(w, http.StatusOK, struct {
+		Message string `json:"message"`
+	}{Message: "OK"})
+}
+
+func (a *Api) GetEventComments(w http.ResponseWriter, r *http.Request) {
+	notes, err := a.storage.EventComments(r.Context(), mux.Vars(r)["id"])
+	if err != nil {
+		api.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to get event comment: %v", err))
 		return
 	}
 	comments := make([]EventComment, len(notes))
@@ -102,8 +189,36 @@ func (a *Api) GetEventComments(c *gin.Context) {
 			Text:   n.Text(),
 		}
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"event":    eventId,
-		"comments": comments,
-	})
+	api.JSONResponse(w, http.StatusOK, struct {
+		Comments []EventComment `json:"comments"`
+	}{Comments: comments})
+}
+
+func (a *Api) PostEventComment(w http.ResponseWriter, r *http.Request) {
+	var e EventComment
+	if err := json.NewDecoder(r.Body).Decode(&e); err != nil {
+		api.JSONErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("invalid event comment: %v", err))
+		return
+	}
+	if err := validator.New().Struct(e); err != nil {
+		api.JSONErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("invalid event comment: %v", err))
+		return
+	}
+	t, err := a.sessionStore.GetStorageToken(r)
+	if err != nil {
+		http.Redirect(w, r, "/auth/login", http.StatusTemporaryRedirect)
+		return
+	}
+	if err := a.storage.NewEventComment(
+		r.Context(),
+		t,
+		mux.Vars(r)["id"],
+		storage.NewEventCommentOpts{Text: e.Text},
+	); err != nil {
+		api.JSONErrorResponse(w, http.StatusInternalServerError, fmt.Sprintf("failed to add comment to event: %v", err))
+		return
+	}
+	api.JSONResponse(w, http.StatusOK, struct {
+		Message string `json:"message"`
+	}{Message: "OK"})
 }

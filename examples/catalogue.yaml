@@ -1,0 +1,10 @@
+teams:
+  - name: Sklik DevOps
+    email: sklik.devops@firma.seznam.cz
+    im_channel_url: https://teams.szn.cz/sklik/channels/devops
+    documentation_url: https://gitlab.seznam.net/sklik-devops-sre/playbooks
+    dashboard_url: https://gitlab.seznam.net/sklik-devops-sre/playbooks
+    managed_services: [ "Sentry", "PostHog", "Autoadmins" ]
+    on_call:
+      vendor: opsgenie
+      schedule_name: SRE_schedule
