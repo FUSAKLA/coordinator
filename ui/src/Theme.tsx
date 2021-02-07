@@ -1,12 +1,13 @@
 import {ThemeProvider} from '@material-ui/styles';
 import React, {useState} from "react";
-import {blue, cyan, lightGreen, red, teal} from "@material-ui/core/colors";
+import {blue, cyan, grey, lightGreen, red, teal} from "@material-ui/core/colors";
 import {createMuiTheme, CssBaseline, IconButton} from "@material-ui/core";
 import {Brightness4, Brightness7} from "@material-ui/icons";
 
 declare module "@material-ui/core/styles/createPalette" {
     // eslint-disable-next-line
     interface Palette {
+        menuText: Palette['primary'];
         incident: Palette['primary'];
         maintenance: Palette['primary'];
         notice: Palette['primary'];
@@ -14,6 +15,7 @@ declare module "@material-ui/core/styles/createPalette" {
 
     // eslint-disable-next-line
     interface PaletteOptions {
+        menuText: PaletteOptions['primary'];
         incident: PaletteOptions['primary'];
         maintenance: PaletteOptions['primary'];
         notice: PaletteOptions['primary'];
@@ -35,6 +37,9 @@ export function ThemedApp(props: { children: React.ReactNode, dark: boolean }) {
             },
             secondary: {
                 main: teal[400],
+            },
+            menuText: {
+                main: grey[50],
             },
             incident: {
                 main: red[400]

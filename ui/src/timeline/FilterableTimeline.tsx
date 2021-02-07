@@ -5,7 +5,7 @@ import {Card, CardContent, Checkbox, FormControlLabel, FormGroup, useTheme} from
 import LabelSelector, {Label} from "./LabelSelector";
 import {CreateEventFab} from "./CreateEventFab";
 import NewEventModal from "./NewEventModal";
-import {EventState, EventType, EventTypeLabel, ParseEventState, ParseEventType} from "../App";
+import {EventState, EventType, EventTypeLabel, ParseEventState, ParseEventType} from "../Common";
 
 function getFilteredItems(showFinished: boolean, showIncidents: boolean, showMaintenance: boolean, showNotice: boolean, labelsFilter: Array<string>) {
     const events = TimelineData.storeEvents

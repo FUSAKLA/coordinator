@@ -4,7 +4,7 @@ import clsx from "clsx";
 import {ExpandMore, Person, QuestionAnswer} from "@material-ui/icons";
 import ReactMarkdown from "react-markdown";
 import {makeStyles, Theme} from "@material-ui/core/styles";
-import {EventState, EventType, EventTypeIcon} from "../App";
+import {EventState, EventType, EventTypeIcon} from "../Common";
 import {
     TimelineConnector,
     TimelineContent,
@@ -80,6 +80,7 @@ function EventLabels(props: { labels: Array<string>; handleLabelFilter: (label: 
     for (let l of props.labels) {
         labels.push(<Chip
             id={l}
+            key={l}
             variant="default"
             size="small"
             label={l}
