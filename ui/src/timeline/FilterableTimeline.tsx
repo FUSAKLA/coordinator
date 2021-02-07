@@ -1,5 +1,5 @@
 import {TimelineData} from "./TimelineData";
-import {Event, Timeline} from "./Timeline"
+import {Event, EventTimeline} from "./EventTimeline"
 import React, {useState} from "react";
 import {Card, CardContent, Checkbox, FormControlLabel, FormGroup, useTheme} from "@material-ui/core";
 import LabelSelector, {Label} from "./LabelSelector";
@@ -113,7 +113,7 @@ export function FilterableTimeline() {
                                    onChange={handleLabelSelectorChange}/>
                 </CardContent>
             </Card>
-            <Timeline events={events} handleLabelFilter={handleEventLabelClick}/>
+            <EventTimeline events={events} handleLabelFilter={handleEventLabelClick}/>
             <CreateEventFab handleClick={handleNewEventClick}/>
             <NewEventModal open={state.newEventModalOpened} handleClose={handleNewEventModalClose}/>
         </React.Fragment>

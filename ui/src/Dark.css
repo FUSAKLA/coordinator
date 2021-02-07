@@ -1,4 +1,0 @@
-.vertical-timeline::before {
-    box-shadow: rgba(24, 26, 27, 0.1) 0 1px 1px -1px, rgba(24, 26, 27, 0.08) 0 1px 1px 0, rgba(24, 26, 27, 0.06) 0 1px 1px 0;
-    background-color: rgb(71, 77, 80) !important;
-}
