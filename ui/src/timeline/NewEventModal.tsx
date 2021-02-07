@@ -20,7 +20,7 @@ import {
 import {DateTimePicker, MuiPickersUtilsProvider} from "@material-ui/pickers";
 import DateFnsUtils from '@date-io/date-fns';
 import LabelSelector, {Label} from "./LabelSelector";
-import {EventType, EventTypeIcon, EventTypeLabel, EventTypes} from "../App";
+import {EventType, EventTypeIcon, EventTypeLabel, EventTypes} from "../Common";
 
 
 const useStyles = makeStyles((theme: Theme) =>

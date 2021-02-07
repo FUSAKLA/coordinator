@@ -1,7 +1,7 @@
 import React from "react";
 import 'react-vertical-timeline-component/style.min.css';
 import {TimelineDateItem, TimelineEventItem} from "./TimelineItem"
-import {ParseEventState, ParseEventType} from "../App";
+import {ParseEventState, ParseEventType} from "../Common";
 import {Timeline} from "@material-ui/lab";
 
 export interface Event {
