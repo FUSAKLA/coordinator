@@ -2,7 +2,6 @@ import {AppBar, IconButton, Toolbar, Typography} from "@material-ui/core";
 import {Menu} from "@material-ui/icons";
 import React from "react";
 import {ScrollTop} from "./ScrollTop";
-import "./Layout.css"
 
 
 export function AppWithNavigation(props: { title: React.ReactNode; children: React.ReactNode; scrollTop: boolean; }) {

@@ -1,32 +1,8 @@
 import React from "react";
-import {Typography, useTheme} from "@material-ui/core";
-import {VerticalTimeline, VerticalTimelineElement} from "react-vertical-timeline-component";
 import 'react-vertical-timeline-component/style.min.css';
-import {TimelineEventItem} from "./TimelineItem"
+import {TimelineDateItem, TimelineEventItem} from "./TimelineItem"
 import {ParseEventState, ParseEventType} from "../App";
-import {format, formatDistanceToNow} from 'date-fns'
-
-
-function TimelineDateItem(props: { date: Date; }) {
-    const theme = useTheme()
-    return (
-        <VerticalTimelineElement
-            className="timeline-date-divider"
-            contentArrowStyle={{borderRight: '0px solid white'}}
-            style={{margin: "1em 0"}}
-            iconStyle={{
-                background: theme.palette.background.default,
-                borderRadius: "0.15em",
-                height: "auto",
-                width: "auto",
-                color: "white",
-                padding: "4pt",
-            }}
-            icon={<Typography variant="body1"
-                              color={"textSecondary"}>{format(props.date, 'dd.MM.yyyy')} - {formatDistanceToNow(props.date)} ago</Typography>}
-        />
-    )
-}
+import {Timeline} from "@material-ui/lab";
 
 export interface Event {
     id: string
@@ -45,7 +21,8 @@ export interface Event {
     labels: Array<string>
 }
 
-export function Timeline(props: { events: Array<Event>; handleLabelFilter: (label: string) => void; }) {
+
+export function EventTimeline(props: { events: Array<Event>; handleLabelFilter: (label: string) => void; }) {
     let lastDate = new Date()
     let items = []
     for (let event of props.events) {
@@ -69,10 +46,11 @@ export function Timeline(props: { events: Array<Event>; handleLabelFilter: (labe
         />))
         lastDate = eventStart
     }
+
     return (
-        <VerticalTimeline layout={"1-column"}>
+        <Timeline align="left" style={{marginTop: 0, paddingTop: 0}}>
             {items}
-        </VerticalTimeline>
+        </Timeline>
     )
 }
 
