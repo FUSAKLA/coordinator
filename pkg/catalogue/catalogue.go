@@ -17,6 +17,16 @@ type Catalogue interface {
 	Team(id string) (Team, bool)
 }
 
+type Service struct {
+	Name             string
+	Description      string
+	Url              string
+	DashboardUrl     string
+	DocumentationUrl string
+	SourceCodeUrl    string
+	ImChannelUrl     string
+}
+
 type OnCall struct {
 	ScheduleName string
 	Vendor       string
@@ -29,7 +39,7 @@ type Team struct {
 	IMChannelURL     string
 	DashboardURL     string
 	DocumentationURL string
-	Services         []string
+	Services         []Service
 	OnCall           OnCall
 }
 

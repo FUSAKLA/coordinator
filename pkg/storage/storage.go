@@ -13,7 +13,7 @@ type EventState string
 const (
 	MaintenanceEventType EventType = "maintenance"
 	IncidentEventType    EventType = "incident"
-	WarningEventType     EventType = "warning"
+	NoticeEventType      EventType = "notice"
 	UnknownEventType     EventType = "unknown"
 
 	ActiveEventState   EventState = "active"
@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	EventTypes  = []EventType{MaintenanceEventType, IncidentEventType, WarningEventType}
+	EventTypes  = []EventType{MaintenanceEventType, IncidentEventType, NoticeEventType}
 	EventStates = []EventState{ActiveEventState, FinishedEventState}
 )
 
@@ -63,6 +63,7 @@ type Event interface {
 	Id() string
 	Type() EventType
 	State() EventState
+	Service() string
 	Title() string
 	Description() string
 	Labels() []string

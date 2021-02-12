@@ -3,6 +3,60 @@ import {Build, Help, Info, NotificationsActive} from "@material-ui/icons";
 import {Theme} from "@material-ui/core/styles";
 
 
+export interface User {
+    name: string
+    email: string
+    avatar_url: string
+}
+
+export interface Event {
+    id: string
+    state: string
+    type: string
+    service: string
+    title: string
+    start: number
+    end: number
+    description: string
+    labels: string[]
+    responsible_person: User
+    number_of_comments: number
+}
+
+export interface Person {
+    name: string
+    email: string
+    phone: string
+}
+
+export interface Service {
+    name: string
+    description: string
+    url: string
+    dashboard_url: string
+    im_channel_url: string
+    documentation_url: string
+    source_code_url: string
+}
+
+export interface OnCall {
+    vendor: string,
+    schedule_name: string,
+    person: Person[]
+}
+
+export interface Team {
+    id: string
+    name: string,
+    email: string,
+    im_channel_url: string,
+    dashboard_url: string,
+    documentation_url: string,
+    managed_services: Service[],
+    on_call: OnCall,
+}
+
+
 export enum EventType {
     Incident = "incident",
     Maintenance = "maintenance",
@@ -69,13 +123,13 @@ export function EventTypeLabel(type: EventType) {
 
 export function ParseEventType(typeString: string) {
     switch (typeString) {
-        case "Incident": {
+        case "incident": {
             return EventType.Incident
         }
-        case "Maintenance": {
+        case "maintenance": {
             return EventType.Maintenance
         }
-        case "Notice": {
+        case "notice": {
             return EventType.Notice
         }
         default: {

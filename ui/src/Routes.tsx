@@ -1,6 +1,8 @@
 import React from 'react';
 import {FilterableTimeline} from "./timeline/FilterableTimeline";
 import {EventsCalendar} from "./calendar/Calendar";
+import {TeamsOnCall} from "./oncall/TeamsOnCall";
+import {Services} from "./services/Services";
 
 const Timeline: React.FC = () => {
     return (
@@ -15,15 +17,15 @@ const Calendar: React.FC = () => {
     );
 };
 
-const OnCall: React.FC = () => {
+const OnCallFn: React.FC = () => {
     return (
-        <h1>On call</h1>
+        <TeamsOnCall/>
     );
 };
 
-const Catalogue: React.FC = () => {
+const ServicesFunc: React.FC = () => {
     return (
-        <h1>Catalogue</h1>
+        <Services/>
     );
 };
 
@@ -41,12 +43,12 @@ const Routes = [
     {
         path: '/oncall',
         sidebarName: 'On call',
-        component: OnCall
+        component: OnCallFn
     },
     {
-        path: '/catalogue',
-        sidebarName: 'Catalogue',
-        component: Catalogue
+        path: '/services',
+        sidebarName: 'Services',
+        component: ServicesFunc
     },
 ];
 

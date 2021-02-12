@@ -4,7 +4,31 @@ teams:
     im_channel_url: https://teams.szn.cz/sklik/channels/devops
     documentation_url: https://gitlab.seznam.net/sklik-devops-sre/playbooks
     dashboard_url: https://gitlab.seznam.net/sklik-devops-sre/playbooks
-    managed_services: [ "Sentry", "PostHog", "Autoadmins" ]
+    on_call:
+      vendor: opsgenie
+      schedule_name: SRE_schedule
+    managed_services:
+      - name: Sentry
+        description: Error collector
+        url: https://sentry.sklik.iszn.cz
+        dashboard_url: https://grafana.sklik.iszn.cz/d/RlG31naiz/sentry?orgId=1
+        documentation_url: https://develop.sentry.dev/
+        source_code_url: https://gitlab.seznam.net/Sklik-DevOps/sentry
+      - name: PostHog
+        description: Open source alternative to Google analytics for observing user behavior on our services.
+        url: https://posthog.sklik.cz
+        dashboard_url: https://grafana.sklik.iszn.cz/d/h7eEwB4Gz/posthog?orgId=1&refresh=10s
+        documentation_url: https://posthog.com/docs/
+        source_code_url: https://gitlab.seznam.net/Sklik-DevOps/posthog
+      - name: Jaeger
+        description: Open tracing
+
+  - name: Test
+    email: sklik.devops@firma.seznam.cz
+    im_channel_url: https://teams.szn.cz/sklik/channels/devops
+    documentation_url: https://gitlab.seznam.net/sklik-devops-sre/playbooks
+    dashboard_url: https://gitlab.seznam.net/sklik-devops-sre/playbooks
+    managed_services: [ ]
     on_call:
       vendor: opsgenie
       schedule_name: SRE_schedule
