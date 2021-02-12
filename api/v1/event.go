@@ -27,7 +27,7 @@ type Event struct {
 	Id                string    `json:"id" validate:"isdefault"`
 	State             string    `json:"state" validate:"isdefault"`
 	Type              string    `json:"type"  validate:"required"`
-	Service           string    `json:"service" validate:"required"`
+	Service           string    `json:"service"`
 	Title             string    `json:"title" validate:"required"`
 	Start             time.Time `json:"start"`
 	End               time.Time `json:"end"`
@@ -95,7 +95,7 @@ func (a *Api) GetEvents(w http.ResponseWriter, r *http.Request) {
 		Limit:      30,
 		Since:      time.Now().Add(-time.Hour * 24 * 30	),
 		Until:      time.Now(),
-		EventTypes: nil,
+		EventTypes: storage.EventTypes,
 	}
 	typesFilter, err := stringsToEventTypes(f.EventType)
 	if err != nil {
@@ -144,6 +144,11 @@ func (a *Api) GetEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *Api) PostEvent(w http.ResponseWriter, r *http.Request) {
+	t, err := a.sessionStore.GetStorageToken(r)
+	if err != nil {
+		api.JSONErrorResponse(w, http.StatusUnauthorized, fmt.Sprintf("You have to log in to create events: %v", err))
+		return
+	}
 	e := Event{}
 	if err := json.NewDecoder(r.Body).Decode(&e); err != nil {
 		api.JSONErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("invalid event: %v", err))
@@ -152,11 +157,6 @@ func (a *Api) PostEvent(w http.ResponseWriter, r *http.Request) {
 	a.log.Info(e)
 	if err := validator.New().Struct(e); err != nil {
 		api.JSONErrorResponse(w, http.StatusBadRequest, fmt.Sprintf("invalid event: %v", err))
-		return
-	}
-	t, err := a.sessionStore.GetStorageToken(r)
-	if err != nil {
-		http.Redirect(w, r, "/auth/login", http.StatusTemporaryRedirect)
 		return
 	}
 	if err := a.storage.NewEvent(

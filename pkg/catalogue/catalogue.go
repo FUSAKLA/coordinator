@@ -14,6 +14,7 @@ type Catalogue interface {
 	SetTeams([]Team)
 	SyncWithFile(ctx context.Context, log *logrus.Entry, path string, interval time.Duration) error
 	Teams() []Team
+	TeamByServiceName(service string) []Team
 	Team(id string) (Team, bool)
 }
 
@@ -72,6 +73,18 @@ func (c *catalogue) Teams() []Team {
 	c.mtx.RLock()
 	defer c.mtx.RUnlock()
 	return c.teams
+}
+
+func (c *catalogue) TeamByServiceName(serviceName string) []Team {
+	res := []Team{}
+	for _, t := range c.Teams() {
+		for _, s := range t.Services {
+			if s.Name == serviceName {
+				res = append(res, t)
+			}
+		}
+	}
+	return res
 }
 
 func (c *catalogue) Team(id string) (Team, bool) {

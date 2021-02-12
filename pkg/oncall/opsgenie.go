@@ -48,9 +48,6 @@ func (p *opsGenie) person(ctx context.Context, username string) (Person, error) 
 		Identifier: username,
 		Expand:     "contact",
 	})
-	fmt.Println(u.UserContacts)
-	fmt.Println(u.Details)
-	fmt.Println(*u.UserAddress)
 	if err != nil {
 		return Person{}, err
 	}

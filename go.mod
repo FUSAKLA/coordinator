@@ -6,6 +6,7 @@ require (
 	github.com/PagerDuty/go-pagerduty v1.3.0
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20201120081800-1786d5ef83d4 // indirect
+	github.com/arran4/golang-ical v0.0.0-20210113030058-c451667b5431
 	github.com/creasty/defaults v1.5.1
 	github.com/fatih/color v1.9.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9

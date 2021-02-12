@@ -2,7 +2,7 @@ import {Calendar, momentLocalizer} from 'react-big-calendar'
 import moment from 'moment'
 import {Event, EventType, ParseEventType} from "../Common"
 import "react-big-calendar/lib/css/react-big-calendar.css"
-import {Box, Card, CircularProgress, Snackbar, useTheme} from "@material-ui/core";
+import {Box, Card, CircularProgress, Snackbar, Typography, useTheme} from "@material-ui/core";
 import "./Calendar.css"
 import useFetch from "use-http";
 import React from "react";
@@ -28,7 +28,10 @@ function getEvents(events: Event[]) {
 
 export function EventsCalendar() {
     const theme = useTheme()
-    const {loading, error, data = []} = useFetch("/api/v1/events", {}, [])
+    const {loading, error, data = []} = useFetch("/api/v1/events", {
+        retries: 10,
+        retryDelay: 5000
+    }, [])
     let errMsgOpen = false
 
     const getEventStyle = (event: any, start: any, end: any, isSelected: boolean): { className?: string, style?: Object } => {
@@ -51,35 +54,41 @@ export function EventsCalendar() {
         errMsgOpen = true
     }
     if (loading || !data.events) {
-        content.push(<Box position="relative" display="inline-flex"><CircularProgress/></Box>)
+        content.push(<Box><CircularProgress style={{position: "relative", left: "48%", top: "3em"}}/></Box>)
     } else {
         content.push(
-            <Calendar
-                localizer={localizer}
-                events={getEvents(data.events)}
-                startAccessor="start"
-                endAccessor="end"
-                style={{
-                    height: "80vh",
-                    backgroundColor: theme.palette.background.paper,
-                    paddingTop: "2em",
-                    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-                }}
-                eventPropGetter={getEventStyle}
-            />
+            <Card style={{padding: "2em"}}>
+                <Typography variant="caption">Import iCal calendars: </Typography>
+                <Typography variant="caption"> <a href="/api/calendar/incident">Incidents</a></Typography>
+                <Typography variant="caption"> <a href="/api/calendar/maintenance">Maintenance</a></Typography>
+                <Typography variant="caption"> <a href="/api/calendar/notice">Notices</a></Typography>
+                <Calendar
+                    localizer={localizer}
+                    events={getEvents(data.events)}
+                    startAccessor="start"
+                    endAccessor="end"
+                    style={{
+                        height: "80vh",
+                        backgroundColor: theme.palette.background.paper,
+                        paddingTop: "2em",
+                        fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+                    }}
+                    eventPropGetter={getEventStyle}
+                />
+            </Card>
         )
     }
 
 
     return (
-        <Card style={{padding: "2em"}}>
+        <React.Fragment>
             {content}
             <Snackbar open={errMsgOpen} autoHideDuration={6000}>
                 <Alert severity="error">
                     {error ? error.message : ""}
                 </Alert>
             </Snackbar>
-        </Card>
+        </React.Fragment>
     )
 }
 

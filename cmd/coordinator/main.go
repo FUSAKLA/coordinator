@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"github.com/fusakla/coordinator/api/auth"
+	"github.com/fusakla/coordinator/api/calendar"
 	v1 "github.com/fusakla/coordinator/api/v1"
 	"github.com/fusakla/coordinator/pkg/catalogue"
 	"github.com/fusakla/coordinator/pkg/config"
@@ -41,7 +42,7 @@ func main() {
 	// If user has set the oAuth callback setup the authentication API.
 	if conf.Storage.OAuthCallbackBaseURL != "" {
 		gothic.Store = sessionStore
-		authPath := "/auth"
+		authPath := "/api/auth"
 		authApi := auth.New(log.WithField("api", "auth"), sessionStore)
 		authApi.Register(r.PathPrefix(authPath).Subrouter())
 		conf.Storage.OAuthCallbackBaseURL = conf.Storage.OAuthCallbackBaseURL + path.Join(authPath, auth.CallbackPath)
@@ -75,6 +76,9 @@ func main() {
 	// Setup the API.
 	apiV1 := v1.New(log.WithField("api", "v1"), sessionStore, store, teamCatalogue, onCall)
 	apiV1.Register(r.PathPrefix("/api/v1").Subrouter())
+
+	calendarApi := calendar.New(log.WithField("api", "v1"), store)
+	calendarApi.Register(r.PathPrefix("/api/calendar").Subrouter())
 
 	// Spin up the server.
 	log.Infof("Starting server, listening on: http://0.0.0.0:8080")
