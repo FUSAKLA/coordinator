@@ -1,15 +1,16 @@
 import {Calendar, momentLocalizer} from 'react-big-calendar'
 import moment from 'moment'
-import {Event} from "../timeline/EventTimeline"
-import {TimelineData} from "../timeline/TimelineData";
+import {Event, EventType, ParseEventType} from "../Common"
 import "react-big-calendar/lib/css/react-big-calendar.css"
-import {EventType, ParseEventType} from "../Common";
-import {Card, useTheme} from "@material-ui/core";
+import {Box, Card, CircularProgress, Snackbar, useTheme} from "@material-ui/core";
 import "./Calendar.css"
+import useFetch from "use-http";
+import React from "react";
+import {Alert} from "@material-ui/lab";
 
 const localizer = momentLocalizer(moment)
 
-function getEvents(events: Array<Event>) {
+function getEvents(events: Event[]) {
     let calEvents = []
     for (let e of events) {
         calEvents.push({
@@ -27,11 +28,10 @@ function getEvents(events: Array<Event>) {
 
 export function EventsCalendar() {
     const theme = useTheme()
+    const {loading, error, data = []} = useFetch("/api/v1/events", {}, [])
+    let errMsgOpen = false
 
-    const getEventStyle = (event: object, start: any, end: any, isSelected: boolean): { className?: string, style?: Object } => {
-        // @ts-ignore
-        console.log(event)
-        // @ts-ignore
+    const getEventStyle = (event: any, start: any, end: any, isSelected: boolean): { className?: string, style?: Object } => {
         switch (ParseEventType(event.type)) {
             case EventType.Incident: {
                 return {className: "incident", style: {backgroundColor: theme.palette.incident.main}}
@@ -46,12 +46,17 @@ export function EventsCalendar() {
         return {}
     }
 
-
-    return (
-        <Card>
+    let content = []
+    if (error) {
+        errMsgOpen = true
+    }
+    if (loading || !data.events) {
+        content.push(<Box position="relative" display="inline-flex"><CircularProgress/></Box>)
+    } else {
+        content.push(
             <Calendar
                 localizer={localizer}
-                events={getEvents(TimelineData.storeEvents)}
+                events={getEvents(data.events)}
                 startAccessor="start"
                 endAccessor="end"
                 style={{
@@ -62,6 +67,18 @@ export function EventsCalendar() {
                 }}
                 eventPropGetter={getEventStyle}
             />
+        )
+    }
+
+
+    return (
+        <Card style={{padding: "2em"}}>
+            {content}
+            <Snackbar open={errMsgOpen} autoHideDuration={6000}>
+                <Alert severity="error">
+                    {error ? error.message : ""}
+                </Alert>
+            </Snackbar>
         </Card>
     )
 }

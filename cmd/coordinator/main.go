@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/markbates/goth/gothic"
+	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"net/http"
@@ -77,5 +78,6 @@ func main() {
 
 	// Spin up the server.
 	log.Infof("Starting server, listening on: http://0.0.0.0:8080")
-	log.Fatal(http.ListenAndServe(":8080", handlers.LoggingHandler(os.Stdout, r)))
+	handler := cors.Default().Handler(r)
+	log.Fatal(http.ListenAndServe(":8080", handlers.LoggingHandler(os.Stdout, handler)))
 }

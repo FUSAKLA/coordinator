@@ -1,14 +1,26 @@
-import {TimelineData} from "./TimelineData";
-import {Event, EventTimeline} from "./EventTimeline"
+import {EventTimeline} from "./EventTimeline"
 import React, {useState} from "react";
-import {Card, CardContent, Checkbox, FormControlLabel, FormGroup, useTheme} from "@material-ui/core";
+import {
+    Box,
+    Card,
+    CardContent,
+    Checkbox,
+    CircularProgress,
+    FormControlLabel,
+    FormGroup,
+    Snackbar,
+    Typography,
+    useTheme
+} from "@material-ui/core";
 import LabelSelector, {Label} from "./LabelSelector";
 import {CreateEventFab} from "./CreateEventFab";
 import NewEventModal from "./NewEventModal";
-import {EventState, EventType, EventTypeLabel, ParseEventState, ParseEventType} from "../Common";
+import {Event, EventState, EventType, EventTypeLabel, ParseEventState, ParseEventType} from "../Common";
+import useFetch from "use-http";
+import {Alert} from "@material-ui/lab";
 
-function getFilteredItems(showFinished: boolean, showIncidents: boolean, showMaintenance: boolean, showNotice: boolean, labelsFilter: Array<string>) {
-    const events = TimelineData.storeEvents
+
+function filterEvents(events: Event[], showFinished: boolean, showIncidents: boolean, showMaintenance: boolean, showNotice: boolean, labelFilter: string[]) {
     let items = []
     let allowedEventTypes = []
     if (showIncidents) {
@@ -27,7 +39,7 @@ function getFilteredItems(showFinished: boolean, showIncidents: boolean, showMai
         if (!allowedEventTypes.includes(ParseEventType(e.type))) {
             continue
         }
-        if (labelsFilter.length > 0 && !e.labels.some(r => labelsFilter.includes(r))) {
+        if (labelFilter.length > 0 && !e.labels.some((r: string) => labelFilter.includes(r))) {
             continue
         }
         items.push(e)
@@ -35,12 +47,14 @@ function getFilteredItems(showFinished: boolean, showIncidents: boolean, showMai
     return items
 }
 
-function getItemsLabels(events: Array<Event>) {
-    let labels: Array<string> = []
+function getUniqueLabels(events: Event[]) {
+    let labels: string[] = []
     for (let e of events) {
         labels = labels.concat(e.labels)
     }
-    return labels
+    return labels.sort().filter(function (item, pos, ary) {
+        return !pos || item !== ary[pos - 1];
+    });
 }
 
 
@@ -55,8 +69,6 @@ export function FilterableTimeline() {
         labelFilter: labelFilter,
         newEventModalOpened: false,
     })
-    let events = getFilteredItems(state.showFinished, state.showIncidents, state.showMaintenance, state.showNotice, state.labelFilter)
-    let uniqueLabels = getItemsLabels(events)
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setState({...state, [event.target.name]: event.target.checked});
     }
@@ -74,6 +86,35 @@ export function FilterableTimeline() {
     }
     const handleNewEventModalClose = () => {
         setState({...state, newEventModalOpened: false});
+    }
+
+    let params = [
+        "limit=30",
+    ]
+    const {
+        loading,
+        error,
+        data = []
+    } = useFetch("/api/v1/events?" + params.join("&"), {}, [state.showMaintenance, state.showIncidents, state.showNotice])
+    let errMsgOpen = false
+
+
+    let uniqueLabels: string[] = []
+
+    let content = []
+    if (error) {
+        errMsgOpen = true
+    }
+    if (loading || !data.events) {
+        content.push(<Box position="relative" display="inline-flex"><CircularProgress/></Box>)
+    } else {
+        uniqueLabels = getUniqueLabels(data.events)
+        let filteredEvents = filterEvents(data.events, state.showFinished, state.showIncidents, state.showMaintenance, state.showNotice, state.labelFilter)
+        if (filteredEvents.length === 0) {
+            content.push(<Typography variant="caption">No events matching the filter found</Typography>)
+        } else {
+            content.push(<EventTimeline events={filteredEvents} handleLabelFilter={handleEventLabelClick}/>)
+        }
     }
     return (
         <React.Fragment>
@@ -113,9 +154,14 @@ export function FilterableTimeline() {
                                    onChange={handleLabelSelectorChange}/>
                 </CardContent>
             </Card>
-            <EventTimeline events={events} handleLabelFilter={handleEventLabelClick}/>
+            {content}
             <CreateEventFab handleClick={handleNewEventClick}/>
             <NewEventModal open={state.newEventModalOpened} handleClose={handleNewEventModalClose}/>
+            <Snackbar open={errMsgOpen} autoHideDuration={6000}>
+                <Alert severity="error">
+                    {error ? error.message : ""}
+                </Alert>
+            </Snackbar>
         </React.Fragment>
     );
 }

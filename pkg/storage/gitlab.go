@@ -10,6 +10,7 @@ import (
 	"github.com/xanzy/go-gitlab"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -18,11 +19,18 @@ import (
 const (
 	gitlabIncidentLabel    = "incident"
 	gitlabMaintenanceLabel = "maintenance"
-	gitlabWarningLabel     = "warning"
+	gitlabNoticeLabel      = "notice"
 
 	gitlabOpenedIssueState = "opened"
 	gitlabClosedIssueState = "closed"
 )
+
+var (
+	gitlabEventTypeLabels = []string{gitlabIncidentLabel, gitlabMaintenanceLabel, gitlabNoticeLabel}
+)
+
+var gitlabServiceLabelRegexp = regexp.MustCompile(`service::(.+)`)
+var gitlabEventTypeRegexp = regexp.MustCompile(`event_type::(.+)`)
 
 func setupGitlabOauth(gitlabUrl, appKey, secretKey, callbackUrl string) {
 	providerName := "gitlab"
@@ -42,10 +50,6 @@ func setupGitlabOauth(gitlabUrl, appKey, secretKey, callbackUrl string) {
 	)
 	p.SetName(providerName)
 	goth.UseProviders(p)
-}
-
-func loadSecrets() {
-
 }
 
 func newGitlabStore(oAuthCallbackURL string, conf config.GitLabConfig) (Storage, error) {
@@ -115,22 +119,26 @@ func (g *gitlabEvent) Id() string {
 	return strconv.Itoa(g.issue.IID)
 }
 
-func (g *gitlabEvent) Type() EventType {
-	for _, l := range g.Labels() {
-		switch l {
-		case gitlabIncidentLabel:
-			return IncidentEventType
-		case gitlabMaintenanceLabel:
-			return MaintenanceEventType
-		case gitlabWarningLabel:
-			return WarningEventType
+func (g *gitlabEvent) extractRegexpLabelValue(r *regexp.Regexp) string {
+	for _, l := range g.issue.Labels {
+		res := r.FindStringSubmatch(l)
+		if len(res) > 0 {
+			return res[1]
 		}
 	}
-	return UnknownEventType
+	return "unknown"
+}
+
+func (g *gitlabEvent) Type() EventType {
+	return EventType(g.extractRegexpLabelValue(gitlabEventTypeRegexp))
 }
 
 func (g *gitlabEvent) Title() string {
 	return g.issue.Title
+}
+
+func (g *gitlabEvent) Service() string {
+	return g.extractRegexpLabelValue(gitlabServiceLabelRegexp)
 }
 
 func (g *gitlabEvent) State() EventState {
@@ -149,7 +157,14 @@ func (g *gitlabEvent) Description() string {
 }
 
 func (g *gitlabEvent) Labels() []string {
-	return g.issue.Labels
+	labels := []string{}
+	for _, l := range g.issue.Labels {
+		if gitlabEventTypeRegexp.MatchString(l) {
+			continue
+		}
+		labels = append(labels, l)
+	}
+	return labels
 }
 
 func (g *gitlabEvent) ResponsiblePerson() User {
@@ -290,8 +305,8 @@ func (g *gitlabStore) NewEvent(ctx context.Context, token string, eventOpts NewE
 		labels = []string{gitlabIncidentLabel}
 	case MaintenanceEventType:
 		labels = []string{gitlabMaintenanceLabel}
-	case WarningEventType:
-		labels = []string{gitlabWarningLabel}
+	case NoticeEventType:
+		labels = []string{gitlabNoticeLabel}
 	}
 	_, _, err := g.oauthClient(token).Issues.CreateIssue(g.project.ID, &gitlab.CreateIssueOptions{
 		Title:       gitlab.String(eventOpts.Title),

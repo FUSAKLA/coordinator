@@ -31,7 +31,7 @@ func (a *Api) Register(router *mux.Router) {
 func (a *Api) Login(w http.ResponseWriter, r *http.Request) {
 	if user, err := gothic.CompleteUserAuth(w, r); err == nil {
 		a.sessionStore.SetStorageToken(r, w, user.AccessToken)
-		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		http.Redirect(w, r, r.URL.Path, http.StatusTemporaryRedirect)
 	} else {
 		gothic.BeginAuthHandler(w, r)
 	}
@@ -45,7 +45,7 @@ func (a *Api) LoginCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	a.sessionStore.SetStorageToken(r, w, user.AccessToken)
 	a.sessionStore.SetUserInfo(r, w, user)
-	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, r.URL.Path, http.StatusTemporaryRedirect)
 }
 
 func (a *Api) Logout(w http.ResponseWriter, r *http.Request) {
@@ -53,13 +53,13 @@ func (a *Api) Logout(w http.ResponseWriter, r *http.Request) {
 		api.TextResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to logout: %s", err))
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, r.URL.Path, http.StatusTemporaryRedirect)
 }
 
 func (a *Api) User(w http.ResponseWriter, r *http.Request) {
 	u, err := a.sessionStore.GetUserInfo(r)
 	if err != nil {
-		api.JSONResponse(w, http.StatusNotFound, fmt.Sprintf("user info not found: %v", err))
+		api.JSONResponse(w, http.StatusUnauthorized, fmt.Sprintf("You are not logged in"))
 		return
 	}
 	api.JSONResponse(w, http.StatusOK, struct {

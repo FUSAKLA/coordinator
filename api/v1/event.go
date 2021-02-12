@@ -27,6 +27,7 @@ type Event struct {
 	Id                string    `json:"id" validate:"isdefault"`
 	State             string    `json:"state" validate:"isdefault"`
 	Type              string    `json:"type"  validate:"required"`
+	Service           string    `json:"service" validate:"required"`
 	Title             string    `json:"title" validate:"required"`
 	Start             time.Time `json:"start"`
 	End               time.Time `json:"end"`
@@ -57,6 +58,7 @@ func apiEvent(storeEvent storage.Event) Event {
 		Id:                storeEvent.Id(),
 		State:             string(storeEvent.State()),
 		Type:              string(storeEvent.Type()),
+		Service:           storeEvent.Service(),
 		Title:             storeEvent.Title(),
 		Start:             storeEvent.Start(),
 		End:               storeEvent.End(),
@@ -91,7 +93,7 @@ func (a *Api) GetEvents(w http.ResponseWriter, r *http.Request) {
 	}
 	filter := storage.EventFilter{
 		Limit:      30,
-		Since:      time.Now().Add(-time.Hour * 24 * 7),
+		Since:      time.Now().Add(-time.Hour * 24 * 30	),
 		Until:      time.Now(),
 		EventTypes: nil,
 	}
