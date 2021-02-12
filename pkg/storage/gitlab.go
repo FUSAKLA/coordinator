@@ -107,7 +107,12 @@ func (g *gitlabStore) String() string {
 }
 
 func (g *gitlabStore) oauthClient(token string) *gitlab.Client {
-	c, _ := gitlab.NewOAuthClient(token, gitlab.WithBaseURL(g.baseUrl))
+	var c *gitlab.Client
+	if g.baseUrl != "" {
+		c, _ = gitlab.NewOAuthClient(token, gitlab.WithBaseURL(g.baseUrl))
+	} else {
+		c, _ = gitlab.NewOAuthClient(token)
+	}
 	return c
 }
 
@@ -275,7 +280,14 @@ func (g *gitlabStore) Events(ctx context.Context, filter EventFilter) ([]Event, 
 	}
 	var events []Event
 	for _, issue := range issues {
-		if !labelsMatchFilter(issue.Labels, filter.EventTypes) {
+		newEvent := gitlabEvent{issue}
+		allowedType := false
+		for _, t := range filter.EventTypes {
+			if t == newEvent.Type() {
+				allowedType = true
+			}
+		}
+		if !allowedType {
 			continue
 		}
 		events = append(events, &gitlabEvent{issue})
@@ -298,20 +310,15 @@ func (g *gitlabStore) Event(ctx context.Context, id string) (Event, error) {
 	return &gitlabEvent{issue}, nil
 }
 
+func eventTypeToGitlabLabel(eventType EventType) string {
+	return fmt.Sprintf("event_type::%s", eventType)
+}
+
 func (g *gitlabStore) NewEvent(ctx context.Context, token string, eventOpts NewEventOpts) error {
-	var labels []string
-	switch eventOpts.Type {
-	case IncidentEventType:
-		labels = []string{gitlabIncidentLabel}
-	case MaintenanceEventType:
-		labels = []string{gitlabMaintenanceLabel}
-	case NoticeEventType:
-		labels = []string{gitlabNoticeLabel}
-	}
 	_, _, err := g.oauthClient(token).Issues.CreateIssue(g.project.ID, &gitlab.CreateIssueOptions{
 		Title:       gitlab.String(eventOpts.Title),
 		Description: gitlab.String(eventOpts.Description),
-		Labels:      labels,
+		Labels:      append(eventOpts.Labels, eventTypeToGitlabLabel(eventOpts.Type)),
 	}, gitlab.WithContext(ctx))
 	if err != nil {
 		return err

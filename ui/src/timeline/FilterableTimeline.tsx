@@ -95,7 +95,10 @@ export function FilterableTimeline() {
         loading,
         error,
         data = []
-    } = useFetch("/api/v1/events?" + params.join("&"), {}, [state.showMaintenance, state.showIncidents, state.showNotice])
+    } = useFetch("/api/v1/events?" + params.join("&"), {
+        retries: 10,
+        retryDelay: 5000
+    }, [state.newEventModalOpened, state.showMaintenance, state.showIncidents, state.showNotice])
     let errMsgOpen = false
 
 
@@ -106,7 +109,7 @@ export function FilterableTimeline() {
         errMsgOpen = true
     }
     if (loading || !data.events) {
-        content.push(<Box position="relative" display="inline-flex"><CircularProgress/></Box>)
+        content.push(<Box><CircularProgress style={{position: "relative", left: "48%", top: "3em"}}/></Box>)
     } else {
         uniqueLabels = getUniqueLabels(data.events)
         let filteredEvents = filterEvents(data.events, state.showFinished, state.showIncidents, state.showMaintenance, state.showNotice, state.labelFilter)
@@ -156,7 +159,8 @@ export function FilterableTimeline() {
             </Card>
             {content}
             <CreateEventFab handleClick={handleNewEventClick}/>
-            <NewEventModal open={state.newEventModalOpened} handleClose={handleNewEventModalClose}/>
+            <NewEventModal open={state.newEventModalOpened} knownLabels={uniqueLabels}
+                           handleClose={handleNewEventModalClose}/>
             <Snackbar open={errMsgOpen} autoHideDuration={6000}>
                 <Alert severity="error">
                     {error ? error.message : ""}

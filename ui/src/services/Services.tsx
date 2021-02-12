@@ -147,7 +147,10 @@ function ServiceCardDetails(props: { classes: ClassNameMap, service: Service, te
 
 export function Services() {
     const classes = useStyles();
-    const {loading, error, data = []} = useFetch("/api/v1/teams", {}, [])
+    const {loading, error, data = []} = useFetch("/api/v1/teams", {
+        retries: 10,
+        retryDelay: 5000
+    }, [])
     let errMsgOpen = false
 
     let content = []
@@ -155,7 +158,7 @@ export function Services() {
         errMsgOpen = true
     }
     if (loading || !data.teams) {
-        content.push(<Box position="relative" display="inline-flex"><CircularProgress/></Box>)
+        content.push(<Box style={{position: "relative", left: "48%", top: "3em"}}><CircularProgress/></Box>)
     } else {
         for (let t of data.teams) {
             for (let s of t.managed_services) {
