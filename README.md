@@ -11,9 +11,9 @@ Tool to coordinate maintenance and incidents
 ## TODO
 
 - [x] add pages to show teams and their on-calls
-- [ ] think of a way how to connect team and event
+- [x] think of a way how to connect team and event
 - [x] expose events as [ics calendar](https://github.com/arran4/golang-ical)
-- [ ] implement the Grafana [JSON datasource REST API](https://grafana.com/grafana/plugins/simpod-json-datasource)
+- [x] implement the Grafana [JSON datasource REST API](https://grafana.com/grafana/plugins/simpod-json-datasource) (Annotations support)
 - [x] expose Prometheus metrics about current events
 - [ ] create issue templates in the storage (GitLab, GitHub)
 - [x] allow creating the events and adding comments

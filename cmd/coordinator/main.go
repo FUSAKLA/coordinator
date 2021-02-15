@@ -5,6 +5,7 @@ import (
 	"github.com/albertogviana/prometheus-middleware"
 	"github.com/fusakla/coordinator/api/auth"
 	"github.com/fusakla/coordinator/api/calendar"
+	"github.com/fusakla/coordinator/api/grafana"
 	v1 "github.com/fusakla/coordinator/api/v1"
 	"github.com/fusakla/coordinator/pkg/catalogue"
 	"github.com/fusakla/coordinator/pkg/config"
@@ -84,6 +85,9 @@ func main() {
 
 	calendarApi := calendar.New(log.WithField("api", "calendar"), store)
 	calendarApi.Register(r.PathPrefix("/api/calendar").Subrouter())
+
+	grafanaApi := grafana.New(log.WithField("api", "grafana"), store)
+	grafanaApi.Register(r.PathPrefix("/api/grafana").Subrouter())
 
 	staticFileHandler, err := statikhandler.New("/index.html")
 	if err != nil {
