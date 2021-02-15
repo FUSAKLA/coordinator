@@ -2,17 +2,20 @@ package main
 
 import (
 	"context"
+	"github.com/albertogviana/prometheus-middleware"
 	"github.com/fusakla/coordinator/api/auth"
 	"github.com/fusakla/coordinator/api/calendar"
 	v1 "github.com/fusakla/coordinator/api/v1"
 	"github.com/fusakla/coordinator/pkg/catalogue"
 	"github.com/fusakla/coordinator/pkg/config"
 	"github.com/fusakla/coordinator/pkg/oncall"
+	"github.com/fusakla/coordinator/pkg/statikhandler"
 	"github.com/fusakla/coordinator/pkg/storage"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"github.com/markbates/goth/gothic"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -42,7 +45,7 @@ func main() {
 	// If user has set the oAuth callback setup the authentication API.
 	if conf.Storage.OAuthCallbackBaseURL != "" {
 		gothic.Store = sessionStore
-		authPath := "/api/auth"
+		authPath := "/auth"
 		authApi := auth.New(log.WithField("api", "auth"), sessionStore)
 		authApi.Register(r.PathPrefix(authPath).Subrouter())
 		conf.Storage.OAuthCallbackBaseURL = conf.Storage.OAuthCallbackBaseURL + path.Join(authPath, auth.CallbackPath)
@@ -73,12 +76,24 @@ func main() {
 	}
 	log.Infof("Initialized %s", store)
 
+	r.Path("/metrics").Handler(promhttp.Handler())
+
 	// Setup the API.
 	apiV1 := v1.New(log.WithField("api", "v1"), sessionStore, store, teamCatalogue, onCall)
 	apiV1.Register(r.PathPrefix("/api/v1").Subrouter())
 
-	calendarApi := calendar.New(log.WithField("api", "v1"), store)
+	calendarApi := calendar.New(log.WithField("api", "calendar"), store)
 	calendarApi.Register(r.PathPrefix("/api/calendar").Subrouter())
+
+	staticFileHandler, err := statikhandler.New("/index.html")
+	if err != nil {
+		log.Fatalf("error initializing static file handler: %v", err)
+	}
+	r.PathPrefix("/").Handler(staticFileHandler)
+	log.Infof("Initialized static files handler")
+
+	middleware := prometheusmiddleware.NewPrometheusMiddleware(prometheusmiddleware.Opts{})
+	r.Use(middleware.InstrumentHandlerDuration)
 
 	// Spin up the server.
 	log.Infof("Starting server, listening on: http://0.0.0.0:8080")

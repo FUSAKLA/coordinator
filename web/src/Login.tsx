@@ -7,7 +7,7 @@ import {ExitToApp} from "@material-ui/icons";
 
 export function LoginBox() {
     const theme = useTheme()
-    const {response, loading, error, data = []} = useFetch("/api/auth/user", {}, [])
+    const {response, loading, error, data = []} = useFetch("/auth/user", {}, [])
     let errMsgOpen = false
 
     function reportError(err: object): void {
@@ -20,7 +20,7 @@ export function LoginBox() {
     }
     if (loading || !data.name) {
         content.push(
-            <a href="/api/auth/login">
+            <a href="/auth/login">
                 <Avatar
                     variant="square"
                     alt="Log in"

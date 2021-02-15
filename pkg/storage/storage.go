@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
 	"time"
 )
 
@@ -33,9 +34,9 @@ type User interface {
 }
 
 type EventFilter struct {
-	Limit int
-	Since time.Time
-	Until time.Time
+	Limit      int
+	Since      time.Time
+	Until      time.Time
 	EventTypes []EventType
 }
 
@@ -59,6 +60,11 @@ type NewEventOpts struct {
 	End         time.Time
 }
 
+var (
+	incidentMetricDesc *prometheus.Desc = prometheus.NewDesc("service_incident_info", "Information about current incident on the service.", []string{"service"}, prometheus.Labels{})
+	maintenanceMetricDesc *prometheus.Desc = prometheus.NewDesc("service_maintenance_info", "Information about current maintenance on the service.", []string{"service"}, prometheus.Labels{})
+)
+
 type Event interface {
 	Id() string
 	Type() EventType
@@ -74,6 +80,7 @@ type Event interface {
 }
 
 type Storage interface {
+	prometheus.Collector
 	fmt.Stringer
 	NewEvent(ctx context.Context, token string, eventOpts NewEventOpts) error
 	Events(ctx context.Context, filter EventFilter) ([]Event, error)

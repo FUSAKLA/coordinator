@@ -7,6 +7,7 @@ import (
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
 	gitlabAuth "github.com/markbates/goth/providers/gitlab"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/xanzy/go-gitlab"
 	"net/http"
 	"os"
@@ -83,12 +84,16 @@ func newGitlabStore(oAuthCallbackURL string, conf config.GitLabConfig) (Storage,
 		setupGitlabOauth(conf.BaseURL, oAuthKey, oAuthSecret, oAuthCallbackURL)
 		oAuthEnabled = false
 	}
-	return &gitlabStore{
+	s := &gitlabStore{
 		oAuthEnabled: oAuthEnabled,
 		client:       client,
 		baseUrl:      conf.BaseURL,
 		project:      project,
-	}, nil
+	}
+	if err := prometheus.Register(s); err != nil {
+		return nil, err
+	}
+	return s, nil
 }
 
 type gitlabStore struct {
@@ -372,4 +377,29 @@ func (g *gitlabStore) NewEventComment(ctx context.Context, token string, eventId
 		return err
 	}
 	return nil
+}
+
+func (g *gitlabStore) Describe(chan<- *prometheus.Desc) {
+	return
+}
+
+func (g *gitlabStore) Collect(metrics chan<- prometheus.Metric) {
+	events, err := g.Events(context.Background(), EventFilter{Limit: 1000, Since: time.Now().Add(-time.Hour * 24 * 30), Until: time.Now(), EventTypes: EventTypes})
+	if err != nil {
+		return
+	}
+	reportedServices := map[string]struct{}{}
+	for _, e := range events {
+		svc := e.Service()
+		if _, ok := reportedServices[svc]; ok || svc == string(UnknownEventType) {
+			continue
+		}
+		switch e.Type() {
+		case IncidentEventType:
+			metrics <- prometheus.MustNewConstMetric(incidentMetricDesc, prometheus.GaugeValue, 1, svc)
+		case MaintenanceEventType:
+			metrics <- prometheus.MustNewConstMetric(maintenanceMetricDesc, prometheus.GaugeValue, 1, svc)
+		}
+		reportedServices[svc] = struct{}{}
+	}
 }

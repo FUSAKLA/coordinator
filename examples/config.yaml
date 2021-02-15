@@ -1,6 +1,6 @@
 storage:
   storage_to_use: gitlab
-  oauth_callback_base_url: http://localhost:3000
+  oauth_callback_base_url: http://localhost:8080
   gitlab:
     enabled: true
     project: fusakla/coordinator-demo

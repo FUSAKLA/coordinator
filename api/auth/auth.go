@@ -10,7 +10,7 @@ import (
 	"net/http"
 )
 
-const CallbackPath = "/callback"
+const CallbackPath = "/callback/"
 
 func New(logger *logrus.Entry, sessionStore sessions.Store) *Api {
 	return &Api{log: logger, sessionStore: &api.SessionStore{Store: sessionStore}}
@@ -31,7 +31,7 @@ func (a *Api) Register(router *mux.Router) {
 func (a *Api) Login(w http.ResponseWriter, r *http.Request) {
 	if user, err := gothic.CompleteUserAuth(w, r); err == nil {
 		a.sessionStore.SetStorageToken(r, w, user.AccessToken)
-		http.Redirect(w, r, r.URL.Path, http.StatusTemporaryRedirect)
+		http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 	} else {
 		gothic.BeginAuthHandler(w, r)
 	}
@@ -53,7 +53,7 @@ func (a *Api) Logout(w http.ResponseWriter, r *http.Request) {
 		api.TextResponse(w, http.StatusInternalServerError, fmt.Sprintf("Failed to logout: %s", err))
 		return
 	}
-	http.Redirect(w, r, r.URL.Path, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
 }
 
 func (a *Api) User(w http.ResponseWriter, r *http.Request) {
